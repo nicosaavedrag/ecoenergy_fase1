@@ -30,6 +30,13 @@ def lista_zonas(request):
     }
     return render(request, 'monitoreo/lista_zonas.html', context)
 
+def cargar_json(nombre_archivo):
+    ruta = DATA_DIR / nombre_archivo
+    if not ruta.exists():
+        return []
+    with open(ruta, 'r', encoding='utf-8-sig') as f:
+        return json.load(f)
+
 
 def detalle_zona(request, zona_id):
     zonas = cargar_json('zonas.json')

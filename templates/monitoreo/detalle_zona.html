@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Zona: {{ zona.nombre }} - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'lista_zonas' %}" class="btn btn-sm btn-secondary mb-3">&larr; Volver al listado</a>
+    <h2 class="fw-bold">DETALLE DE ZONA: <span class="text-primary">{{ zona.nombre }}</span></h2>
+</div>
+
+<div class="row g-3 mb-4 text-center">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-white">
+            <span class="text-muted small">Límite</span>
+            <strong class="fs-4">{{ zona.limite_kwh }} kWh</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-white">
+            <span class="text-muted small">Consumo total</span>
+            <strong class="fs-4">{{ consumo_total }} kWh</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-white">
+            <span class="text-muted small">Dispositivos</span>
+            <strong class="fs-4">{{ total_dispositivos }}</strong>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 bg-white">
+            <span class="text-muted small">Estado</span>
+            <div>
+                {% if estado == 'ALERTA' %}
+                    <span class="badge bg-danger fs-6 px-3 py-2">⚠️ ALERTA</span>
+                {% else %}
+                    <span class="badge bg-success fs-6 px-3 py-2">✓ NORMAL</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-dark text-white fw-bold py-3">
+        Dispositivos Instalados
+    </div>
+    <div class="card-body p-0">
+        {% if dispositivos %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-4">Dispositivo</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col" class="pe-4 text-end">Consumo kWh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in dispositivos %}
+                            <tr>
+                                <td class="ps-4 fw-semibold">{{ d.nombre }}</td>
+                                <td><span class="badge bg-secondary">{{ d.categoria_nombre }}</span></td>
+                                <td class="pe-4 text-end">{{ d.consumo_kwh }} kWh</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-4 text-center text-muted">
+                <p class="mb-0">Esta zona no tiene dispositivos asociados.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
