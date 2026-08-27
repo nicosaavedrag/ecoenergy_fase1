@@ -1,0 +1,17 @@
+﻿[
+  {
+    "id": 1,
+    "nombre": "Planta de Producción",
+    "limite_kwh": 500.0
+  },
+  {
+    "id": 2,
+    "nombre": "Oficinas Administrativas",
+    "limite_kwh": 200.0
+  },
+  {
+    "id": 3,
+    "nombre": "Bodega Externa",
+    "limite_kwh": 150.0
+  }
+]

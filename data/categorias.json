@@ -1,0 +1,17 @@
+﻿[
+  {
+    "id": 1,
+    "nombre": "Maquinaria Pesada",
+    "descripcion": "Equipos industriales de alto consumo"
+  },
+  {
+    "id": 2,
+    "nombre": "Climatización",
+    "descripcion": "Sistemas de aire acondicionado y calefacción"
+  },
+  {
+    "id": 3,
+    "nombre": "Iluminación y Ofimática",
+    "descripcion": "Luces, computadores y periféricos"
+  }
+]
