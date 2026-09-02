@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Resumen de consumo por zona</h2>
+    <p class="text-muted">Datos agrupados desde zonas.json y dispositivos.json</p>
+
+    <!-- Tarjetas de Totales Globales -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3">
+                <div class="card-body">
+                    <h6 class="card-title text-muted text-uppercase fw-bold">Zonas</h6>
+                    <h3 class="card-text">{{ total_zonas }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white mb-3"> <!-- Clases corregidas -->
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase fw-bold">Dispositivos</h6>
+                    <h3 class="card-text">{{ total_dispositivos }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white mb-3"> <!-- Clases corregidas -->
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase fw-bold">Consumo Total</h6>
+                    <h3 class="card-text">{{ consumo_global|floatformat:1 }} kWh</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Responsiva -->
+    {% if total_zonas > 0 %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Zona</th>
+                    <th>Dispositivos</th>
+                    <th>Consumo</th>
+                    <th>Límite</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for z in zonas %}
+                <tr>
+                    <td>{{ z.nombre }}</td>
+                    <td>{{ z.cantidad }}</td>
+                    <td>{{ z.consumo_total|floatformat:1 }} kWh</td>
+                    <td>{{ z.limite|floatformat:1 }} kWh</td>
+                    <td>
+                        <span class="badge {{ z.estado_clase }} p-2 rounded-pill">
+                            {{ z.estado_texto }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary mt-3">
+        No hay zonas registradas en el sistema.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

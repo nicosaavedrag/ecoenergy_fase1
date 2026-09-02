@@ -20,6 +20,8 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(url='zonas/', permanent=False)),
+    # Si alguien entra a la IP sola, lo redirige automáticamente a /zonas/
+    path('', RedirectView.as_view(url='/zonas/')),
+    # Carga todas las rutas de tu aplicación desde la raíz
     path('', include('monitoreo.urls')),
 ]

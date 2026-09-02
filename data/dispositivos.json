@@ -6,5 +6,8 @@
   {"id": 5, "nombre": "AC Central", "consumo_kwh": 80.0, "zona_id": 2, "categoria_id": 2},
   {"id": 6, "nombre": "Computadores Sala A", "consumo_kwh": 30.0, "zona_id": 2, "categoria_id": 3},
   {"id": 7, "nombre": "Computadores Sala B", "consumo_kwh": 20.0, "zona_id": 2, "categoria_id": 3},
-  {"id": 8, "nombre": "Panel de Iluminación", "consumo_kwh": 10.0, "zona_id": 2, "categoria_id": 3}
+  {"id": 8, "nombre": "Panel de Iluminación", "consumo_kwh": 10.0, "zona_id": 2, "categoria_id": 3},
+  {"id": 9, "nombre": "Montacargas Eléctrico", "consumo_kwh": 120.0, "zona_id": 3, "categoria_id": 1},
+  {"id": 10, "nombre": "Iluminación LED Bodega", "consumo_kwh": 50.0, "zona_id": 3, "categoria_id": 3},
+  {"id": 11, "nombre": "Ventilador Extractor", "consumo_kwh": 50.0, "zona_id": 3, "categoria_id": 2}
 ]
