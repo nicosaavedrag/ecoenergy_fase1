@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-building me-2 text-primary"></i>{{ title }}</h5>
+                <a href="{% url 'zone_list' %}" class="btn btn-sm btn-outline-secondary">Volver al listado</a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small">{{ form.non_field_errors.0 }}</div>
+                    {% endif %}
+
+                    {% if not user_org and form.organization.is_hidden == False %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Organización</label>
+                        {{ form.organization }}
+                        {% if form.organization.errors %}<div class="text-danger small mt-1">{{ form.organization.errors.0 }}</div>{% endif %}
+                    </div>
+                    {% else %}
+                        {{ form.organization }}
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre de la Zona</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Límite Mensual (kWh)</label>
+                            {{ form.monthly_limit_kwh }}
+                            {% if form.monthly_limit_kwh.errors %}<div class="text-danger small mt-1">{{ form.monthly_limit_kwh.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Superficie (m²)</label>
+                            {{ form.floor_area_sqm }}
+                            {% if form.floor_area_sqm.errors %}<div class="text-danger small mt-1">{{ form.floor_area_sqm.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Responsable de Área</label>
+                        {{ form.responsible_person }}
+                        {% if form.responsible_person.errors %}<div class="text-danger small mt-1">{{ form.responsible_person.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        {{ form.is_active }}
+                        <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">¿Zona Operativa?</label>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'zone_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Guardar Zona</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

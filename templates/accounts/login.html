@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar Sesión - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="display-6 text-success mb-2"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <h3 class="fw-bold">EcoEnergy</h3>
+                    <p class="text-muted small">Ingrese sus credenciales corporativas</p>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Usuario</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Contraseña</label>
+                        {{ form.password }}
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-semibold mb-3">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Ingresar al Sistema
+                    </button>
+
+                    <div class="text-center">
+                        <a href="{% url 'password_reset_request' %}" class="text-decoration-none small text-secondary">
+                            <i class="bi bi-key me-1"></i> ¿Olvidó su contraseña?
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light p-3 text-muted small text-center">
+                <strong>Cuentas demo:</strong> <code>admin</code>, <code>operador_norte</code>, <code>lector_norte</code>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

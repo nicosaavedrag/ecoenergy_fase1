@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Energético - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-success me-2"></i>Panel de Control Energético</h2>
+        <p class="text-muted mb-0">
+            {% if user_org %}
+                Monitoreo activo para: <strong class="text-dark">{{ user_org.name }}</strong> (RUT: {{ user_org.tax_id }})
+            {% else %}
+                Vista Consolidada Global (Todas las Organizaciones)
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'consumption_list' %}?export=xlsx" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Exportar Mediciones (.xlsx)
+        </a>
+    </div>
+</div>
+
+<!-- TARJETAS SUPERIORES DE TOTALES -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Zonas de Consumo</div>
+                        <div class="fs-2 fw-bold text-dark mt-1">{{ total_zones }}</div>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle fs-3">
+                        <i class="bi bi-building"></i>
+                    </div>
+                </div>
+                <a href="{% url 'zone_list' %}" class="small text-primary text-decoration-none d-block mt-3">Ver todas las zonas &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Dispositivos Activos</div>
+                        <div class="fs-2 fw-bold text-dark mt-1">{{ total_devices }}</div>
+                    </div>
+                    <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle fs-3">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                </div>
+                <a href="{% url 'device_list' %}" class="small text-info text-decoration-none d-block mt-3">Ver inventario de equipos &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Consumo Acumulado</div>
+                        <div class="fs-2 fw-bold text-success mt-1">{{ total_consumption_kwh }} <span class="fs-6 text-muted">kWh</span></div>
+                    </div>
+                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle fs-3">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                </div>
+                <a href="{% url 'consumption_list' %}" class="small text-success text-decoration-none d-block mt-3">Ver historial de telemetría &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 {% if active_alerts_count > 0 %}border-danger{% else %}border-secondary{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Alertas Pendientes</div>
+                        <div class="fs-2 fw-bold {% if active_alerts_count > 0 %}text-danger{% else %}text-dark{% endif %} mt-1">
+                            {{ active_alerts_count }}
+                        </div>
+                    </div>
+                    <div class="{% if active_alerts_count > 0 %}bg-danger bg-opacity-10 text-danger{% else %}bg-secondary bg-opacity-10 text-secondary{% endif %} p-3 rounded-circle fs-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <a href="{% url 'alert_list' %}?resolved=0" class="small text-danger text-decoration-none d-block mt-3">Ver incidencias activas &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACCIONES RÁPIDAS Y TABLAS RECIENTES -->
+<div class="row g-4">
+    <!-- Últimas Mediciones -->
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Últimas Mediciones de Telemetría</h5>
+                <a href="{% url 'consumption_list' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>Dispositivo</th>
+                            <th>Zona</th>
+                            <th class="text-end">Consumo (kWh)</th>
+                            <th>Fecha/Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in recent_records %}
+                        <tr>
+                            <td class="fw-semibold">{{ record.device.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ record.device.zone.name }}</span></td>
+                            <td class="text-end fw-bold text-success">{{ record.consumption_kwh }}</td>
+                            <td class="text-muted small">{{ record.recorded_at|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No se registran mediciones recientes.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Recientes -->
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-bell me-2 text-danger"></i>Alertas Recientes</h5>
+                <a href="{% url 'alert_list' %}" class="btn btn-sm btn-outline-danger">Gestionar</a>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for alert in recent_alerts %}
+                <div class="list-group-item p-3">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                        <strong class="text-dark">{{ alert.device.name }}</strong>
+                        {% if alert.severity == 'CRITICAL' %}
+                            <span class="badge bg-danger">CRÍTICA</span>
+                        {% elif alert.severity == 'HIGH' %}
+                            <span class="badge bg-warning text-dark">ALTA</span>
+                        {% elif alert.severity == 'MEDIUM' %}
+                            <span class="badge bg-info text-dark">MEDIA</span>
+                        {% else %}
+                            <span class="badge bg-secondary">BAJA</span>
+                        {% endif %}
+                    </div>
+                    <p class="mb-1 small text-muted">{{ alert.message }}</p>
+                    <small class="text-secondary"><i class="bi bi-clock me-1"></i>{{ alert.triggered_at|timesince }} atrás</small>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-shield-check display-6 text-success d-block mb-2"></i>
+                    No hay alertas activas en el sistema.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

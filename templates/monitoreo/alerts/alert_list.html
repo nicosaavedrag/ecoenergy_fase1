@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Alertas de Consumo - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Alertas e Incidencias</h2>
+        <p class="text-muted mb-0">Eventos de sobreconsumo, fallas técnicas y alertas del sistema</p>
+    </div>
+    {% if can_edit %}
+    <a href="{% url 'alert_create' %}" class="btn btn-danger">
+        <i class="bi bi-plus-lg me-1"></i> Registrar Alerta
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filtros y Paginación -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <select name="severity" class="form-select form-select-sm" onchange="this.form.submit();">
+                    <option value="">Todas las Severidades</option>
+                    <option value="CRITICAL" {% if severity == 'CRITICAL' %}selected{% endif %}>Crítica</option>
+                    <option value="HIGH" {% if severity == 'HIGH' %}selected{% endif %}>Alta</option>
+                    <option value="MEDIUM" {% if severity == 'MEDIUM' %}selected{% endif %}>Media</option>
+                    <option value="LOW" {% if severity == 'LOW' %}selected{% endif %}>Baja</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="resolved" class="form-select form-select-sm" onchange="this.form.submit();">
+                    <option value="">Todos los Estados</option>
+                    <option value="0" {% if resolved_param == '0' %}selected{% endif %}>Solo Pendientes</option>
+                    <option value="1" {% if resolved_param == '1' %}selected{% endif %}>Solo Resueltas</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Filtrar</button>
+            </div>
+            <div class="col-12 col-md-3 d-flex justify-content-md-end align-items-center gap-2">
+                <span class="small text-muted">Filas:</span>
+                <select class="form-select form-select-sm" style="width: auto;" onchange="location.href='?page_size=' + this.value + '{% if severity %}&severity={{ severity }}{% endif %}{% if resolved_param %}&resolved={{ resolved_param }}{% endif %}';">
+                    <option value="5" {% if page_size == 5 %}selected{% endif %}>5</option>
+                    <option value="15" {% if page_size == 15 %}selected{% endif %}>15</option>
+                    <option value="30" {% if page_size == 30 %}selected{% endif %}>30</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Alertas -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th># ID</th>
+                    <th>Dispositivo Afectado</th>
+                    <th>Zona</th>
+                    <th class="text-center">Severidad</th>
+                    <th>Detalle de la Alerta</th>
+                    <th>Detección</th>
+                    <th class="text-center">Estado</th>
+                    {% if can_edit %}<th class="text-end">Acciones</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in page_obj %}
+                <tr>
+                    <td class="text-muted small">#{{ alert.id }}</td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ alert.device.name }}</div>
+                        <small class="text-muted">{{ alert.device.serial_number }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ alert.device.zone.name }}</span></td>
+                    <td class="text-center">
+                        {% if alert.severity == 'CRITICAL' %}
+                            <span class="badge bg-danger">CRÍTICA</span>
+                        {% elif alert.severity == 'HIGH' %}
+                            <span class="badge bg-warning text-dark">ALTA</span>
+                        {% elif alert.severity == 'MEDIUM' %}
+                            <span class="badge bg-info text-dark">MEDIA</span>
+                        {% else %}
+                            <span class="badge bg-secondary">BAJA</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ alert.message }}</td>
+                    <td class="small text-muted">{{ alert.triggered_at|date:"d/m/Y H:i" }}</td>
+                    <td class="text-center">
+                        {% if alert.is_resolved %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-check-circle me-1"></i>Resuelta
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                <i class="bi bi-exclamation-circle me-1"></i>Pendiente
+                            </span>
+                        {% endif %}
+                    </td>
+                    {% if can_edit %}
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            {% if not alert.is_resolved %}
+                            <form method="post" action="{% url 'alert_resolve' alert.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-success" title="Marcar como resuelta">
+                                    <i class="bi bi-check2"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            <form id="delete-alert-{{ alert.id }}" method="post" action="{% url 'alert_delete' alert.id %}" style="display:none;">
+                                {% csrf_token %}
+                            </form>
+                            <button type="button" class="btn btn-outline-danger" title="Borrado Lógico" onclick="confirmDelete('delete-alert-{{ alert.id }}', 'Alerta #{{ alert.id }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-shield-check display-6 d-block mb-2 text-success"></i>
+                        No se registran alertas bajo los filtros seleccionados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+        <span class="small text-muted">
+            Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} alertas
+        </span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if severity %}&severity={{ severity }}{% endif %}{% if resolved_param %}&resolved={{ resolved_param }}{% endif %}">&laquo; Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if severity %}&severity={{ severity }}{% endif %}{% if resolved_param %}&resolved={{ resolved_param }}{% endif %}">Siguiente &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Mediciones de Consumo - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-graph-up text-success me-2"></i>Mediciones de Telemetría</h2>
+        <p class="text-muted mb-0">Historial transaccional y registros periódicos de consumo eléctrico</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="?export=xlsx{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Descargar Excel (.xlsx)
+        </a>
+        {% if can_edit %}
+        <a href="{% url 'consumption_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-lg me-1"></i> Registrar Medición
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros y Paginación en Sesión -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <form method="get" class="d-flex gap-2">
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control form-control-sm" placeholder="Buscar por equipo, serie u observación...">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+                    {% if search_query %}
+                        <a href="{% url 'consumption_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="col-12 col-md-7 d-flex justify-content-md-end align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted">Filas por página:</span>
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="location.href='?page_size=' + this.value + '{% if search_query %}&q={{ search_query }}{% endif %}';">
+                        <option value="5" {% if page_size == 5 %}selected{% endif %}>5</option>
+                        <option value="15" {% if page_size == 15 %}selected{% endif %}>15</option>
+                        <option value="30" {% if page_size == 30 %}selected{% endif %}>30</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Mediciones -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th># ID</th>
+                    <th>Dispositivo</th>
+                    <th>Zona</th>
+                    <th>Organización</th>
+                    <th class="text-end">Consumo (kWh)</th>
+                    <th class="text-end">Voltaje Promedio</th>
+                    <th>Fecha y Hora</th>
+                    <th>Observación</th>
+                    {% if can_edit %}<th class="text-end">Acciones</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec in page_obj %}
+                <tr>
+                    <td class="text-muted small">#{{ rec.id }}</td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ rec.device.name }}</div>
+                        <small class="text-muted">{{ rec.device.serial_number }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ rec.device.zone.name }}</span></td>
+                    <td class="small">{{ rec.device.zone.organization.name }}</td>
+                    <td class="text-end fw-bold text-success">{{ rec.consumption_kwh }}</td>
+                    <td class="text-end text-muted">{% if rec.average_voltage %}{{ rec.average_voltage }} V{% else %}-{% endif %}</td>
+                    <td class="small text-muted">{{ rec.recorded_at|date:"d/m/Y H:i" }}</td>
+                    <td class="small text-muted">{{ rec.notes|default:'-' }}</td>
+                    {% if can_edit %}
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'consumption_edit' rec.id %}" class="btn btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form id="delete-rec-{{ rec.id }}" method="post" action="{% url 'consumption_delete' rec.id %}" style="display:none;">
+                                {% csrf_token %}
+                            </form>
+                            <button type="button" class="btn btn-outline-danger" title="Borrado Lógico" onclick="confirmDelete('delete-rec-{{ rec.id }}', 'Medición #{{ rec.id }} de {{ rec.device.name|escapejs }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-graph-down display-6 d-block mb-2 text-secondary"></i>
+                        No se encontraron registros de telemetría.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+        <span class="small text-muted">
+            Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} mediciones
+        </span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">&laquo; Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">Siguiente &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
