@@ -1,412 +1,282 @@
 from django.contrib import admin, messages
 from django.utils import timezone
 from .models import (
-    Organizacion,
-    CategoriaDispositivo,
-    Zona,
-    Dispositivo,
-    PerfilUsuario,
-    RegistroConsumo,
-    AlertaConsumo,
+    Organization,
+    DeviceCategory,
+    Supplier,
+    EnergyTariff,
+    Zone,
+    Device,
+    ConsumptionRecord,
+    EnergyAlert,
+    MaintenanceOrder,
+    MonthlyZoneBudget,
 )
 
 
-def get_user_org(request):
+def get_user_organization(request):
     """
-    Retorna la Organización asociada al usuario autenticado mediante su PerfilUsuario.
-    Si el usuario es superusuario o no tiene perfil asignado, retorna None (acceso global).
+    Retorna la Organización asignada al usuario a través de su perfil (accounts.UserProfile).
+    Retorna None si el usuario es superusuario o no posee organización asociada (acceso global).
     """
     if request.user.is_superuser:
         return None
-    perfil = getattr(request.user, 'perfil', None)
-    if perfil and perfil.organizacion:
-        return perfil.organizacion
+    profile = getattr(request.user, 'profile', None)
+    if profile and profile.organization:
+        return profile.organization
     return None
 
 
 # ==============================================================================
-# INLINES (Admin Pro)
+# INLINES
 # ==============================================================================
 
-class DispositivoInline(admin.TabularInline):
-    """
-    Inline que permite visualizar y dar de alta dispositivos directamente
-    dentro de la interfaz de edición de una Zona.
-    """
-    model = Dispositivo
+class DeviceInline(admin.TabularInline):
+    model = Device
     extra = 0
-    fields = ('nombre', 'codigo_inventario', 'categoria', 'potencia_nominal_kw', 'estado')
+    fields = ('name', 'serial_number', 'category', 'nominal_power_kw', 'status')
     show_change_link = True
 
 
-class RegistroConsumoInline(admin.TabularInline):
-    """
-    Inline que permite visualizar las últimas mediciones de consumo directamente
-    en la ficha técnica de un Dispositivo.
-    """
-    model = RegistroConsumo
+class ConsumptionRecordInline(admin.TabularInline):
+    model = ConsumptionRecord
     extra = 0
-    fields = ('fecha_hora', 'consumo_kwh', 'voltaje_promedio', 'observacion')
-    readonly_fields = ('fecha_hora',)
+    fields = ('recorded_at', 'consumption_kwh', 'average_voltage', 'notes')
+    readonly_fields = ('recorded_at',)
     can_delete = False
     max_num = 5
 
 
+class MaintenanceOrderInline(admin.TabularInline):
+    model = MaintenanceOrder
+    extra = 0
+    fields = ('title', 'scheduled_date', 'status', 'cost')
+    show_change_link = True
+
+
 # ==============================================================================
-# MODELADMINS - TABLAS MAESTRAS
+# TABLAS MAESTRAS (ADMIN)
 # ==============================================================================
 
-@admin.register(Organizacion)
-class OrganizacionAdmin(admin.ModelAdmin):
-    """
-    Tabla Maestra 1: Gestión de Organizaciones.
-    Aplica scoping: los usuarios limitados solo ven su propia organización.
-    """
-    list_display = ('nombre', 'rut', 'email_contacto', 'telefono', 'activa', 'fecha_registro')
-    search_fields = ('nombre', 'rut', 'email_contacto')
-    list_filter = ('activa', 'fecha_registro')
-    ordering = ('nombre',)
+@admin.register(Organization)
+class OrganizationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'tax_id', 'contact_email', 'phone', 'is_active', 'created_at', 'deleted_at')
+    search_fields = ('name', 'tax_id', 'contact_email')
+    list_filter = ('is_active', 'created_at')
+    ordering = ('name',)
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        org = get_user_org(request)
+        qs = Organization.all_objects.all()
+        org = get_user_organization(request)
         if org:
             return qs.filter(id=org.id)
         return qs
 
-    def has_change_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.id != org.id:
-                return False
-        return super().has_change_permission(request, obj)
 
-    def has_delete_permission(self, request, obj=None):
-        if not request.user.is_superuser:
-            return False
-        return super().has_delete_permission(request, obj)
-
-
-@admin.register(CategoriaDispositivo)
-class CategoriaDispositivoAdmin(admin.ModelAdmin):
-    """
-    Tabla Maestra 2: Catálogo de Categorías de Dispositivos.
-    """
-    list_display = ('nombre', 'descripcion_corta', 'es_critica', 'total_dispositivos')
-    search_fields = ('nombre', 'descripcion')
-    list_filter = ('es_critica',)
-    ordering = ('nombre',)
-
-    @admin.display(description="Descripción")
-    def descripcion_corta(self, obj):
-        return (obj.descripcion[:60] + '...') if len(obj.descripcion) > 60 else obj.descripcion
-
-    @admin.display(description="Dispositivos Asociados")
-    def total_dispositivos(self, obj):
-        return obj.dispositivos.count()
-
-
-@admin.register(Zona)
-class ZonaAdmin(admin.ModelAdmin):
-    """
-    Tabla Maestra 3: Zonas o Dependencias.
-    Incluye Inline de Dispositivos, optimización de FK y scoping por organización.
-    """
-    list_display = ('nombre', 'organizacion', 'limite_kwh', 'responsable', 'activa', 'cantidad_dispositivos')
-    search_fields = ('nombre', 'responsable', 'organizacion__nombre')
-    list_filter = ('activa', 'organizacion')
-    ordering = ('organizacion__nombre', 'nombre')
-    list_select_related = ('organizacion',)
-    inlines = [DispositivoInline]
-
-    @admin.display(description="Cant. Dispositivos")
-    def cantidad_dispositivos(self, obj):
-        return obj.dispositivos.count()
+@admin.register(DeviceCategory)
+class DeviceCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description_short', 'is_critical', 'devices_count', 'deleted_at')
+    search_fields = ('name', 'description')
+    list_filter = ('is_critical',)
+    ordering = ('name',)
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        org = get_user_org(request)
+        return DeviceCategory.all_objects.all()
+
+    @admin.display(description="Descripción")
+    def description_short(self, obj):
+        return (obj.description[:50] + '...') if len(obj.description) > 50 else obj.description
+
+    @admin.display(description="Equipos Asociados")
+    def devices_count(self, obj):
+        return obj.devices.count()
+
+
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact_person', 'email', 'phone', 'contract_number', 'deleted_at')
+    search_fields = ('name', 'contact_person', 'contract_number')
+    ordering = ('name',)
+
+    def get_queryset(self, request):
+        return Supplier.all_objects.all()
+
+
+@admin.register(EnergyTariff)
+class EnergyTariffAdmin(admin.ModelAdmin):
+    list_display = ('name', 'organization', 'cost_per_kwh', 'peak_cost_per_kwh', 'currency', 'is_active', 'deleted_at')
+    search_fields = ('name', 'organization__name')
+    list_filter = ('is_active', 'organization')
+    ordering = ('organization__name', 'name')
+    list_select_related = ('organization',)
+
+    def get_queryset(self, request):
+        qs = EnergyTariff.all_objects.all()
+        org = get_user_organization(request)
         if org:
-            return qs.filter(organizacion=org)
+            return qs.filter(organization=org)
         return qs
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "organizacion":
-            org = get_user_org(request)
-            if org:
-                kwargs["queryset"] = Organizacion.objects.filter(id=org.id)
+        org = get_user_organization(request)
+        if org and db_field.name == "organization":
+            kwargs["queryset"] = Organization.objects.filter(id=org.id)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(Zone)
+class ZoneAdmin(admin.ModelAdmin):
+    list_display = ('name', 'organization', 'monthly_limit_kwh', 'floor_area_sqm', 'responsible_person', 'is_active', 'deleted_at')
+    search_fields = ('name', 'responsible_person', 'organization__name')
+    list_filter = ('is_active', 'organization')
+    ordering = ('organization__name', 'name')
+    list_select_related = ('organization',)
+    inlines = [DeviceInline]
+
+    def get_queryset(self, request):
+        qs = Zone.all_objects.all()
+        org = get_user_organization(request)
+        if org:
+            return qs.filter(organization=org)
+        return qs
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        org = get_user_organization(request)
+        if org and db_field.name == "organization":
+            kwargs["queryset"] = Organization.objects.filter(id=org.id)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
-        org = get_user_org(request)
+        org = get_user_organization(request)
         if org and not request.user.is_superuser:
-            obj.organizacion = org
+            obj.organization = org
         super().save_model(request, obj, form, change)
 
-    def has_change_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.organizacion_id != org.id:
-                return False
-        return super().has_change_permission(request, obj)
 
-    def has_delete_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.organizacion_id != org.id:
-                return False
-        return super().has_delete_permission(request, obj)
-
-
-@admin.register(Dispositivo)
-class DispositivoAdmin(admin.ModelAdmin):
-    """
-    Tabla Maestra 4: Equipos de Consumo Eléctrico.
-    Incluye Inline de Mediciones, acciones personalizadas, optimización de FK y scoping.
-    """
-    list_display = (
-        'nombre',
-        'codigo_inventario',
-        'zona',
-        'organizacion_zona',
-        'categoria',
-        'potencia_nominal_kw',
-        'estado',
-        'fecha_instalacion'
-    )
-    search_fields = ('nombre', 'codigo_inventario', 'zona__nombre', 'zona__organizacion__nombre')
-    list_filter = ('estado', 'categoria', 'zona__organizacion')
-    ordering = ('zona__organizacion__nombre', 'nombre')
-    list_select_related = ('zona', 'categoria', 'zona__organizacion')
-    inlines = [RegistroConsumoInline]
-    actions = ['marcar_en_mantenimiento', 'marcar_como_activo', 'desactivar_dispositivos']
+@admin.register(Device)
+class DeviceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'serial_number', 'zone', 'organization_name', 'category', 'nominal_power_kw', 'status', 'deleted_at')
+    search_fields = ('name', 'serial_number', 'zone__name', 'zone__organization__name')
+    list_filter = ('status', 'category', 'zone__organization')
+    ordering = ('zone__organization__name', 'name')
+    list_select_related = ('zone', 'zone__organization', 'category', 'supplier')
+    inlines = [ConsumptionRecordInline, MaintenanceOrderInline]
+    actions = ['mark_in_maintenance', 'mark_active', 'soft_delete_selected']
 
     @admin.display(description="Organización")
-    def organizacion_zona(self, obj):
-        return obj.zona.organizacion.nombre
+    def organization_name(self, obj):
+        return obj.zone.organization.name
 
-    # --------------------------------------------------------------------------
-    # ACCIONES PERSONALIZADAS (Admin Pro)
-    # --------------------------------------------------------------------------
-    @admin.action(description="Marcar dispositivos seleccionados: EN MANTENIMIENTO")
-    def marcar_en_mantenimiento(self, request, queryset):
-        actualizados = queryset.update(estado='MANTENIMIENTO')
-        self.message_user(
-            request,
-            f"Se cambiaron {actualizados} dispositivo(s) a estado 'En Mantenimiento'.",
-            messages.SUCCESS
-        )
+    @admin.action(description="Marcar seleccionados: EN MANTENIMIENTO")
+    def mark_in_maintenance(self, request, queryset):
+        count = queryset.update(status='MAINTENANCE')
+        self.message_user(request, f"{count} dispositivo(s) puesto(s) en mantenimiento.", messages.SUCCESS)
 
-    @admin.action(description="Marcar dispositivos seleccionados: ACTIVO")
-    def marcar_como_activo(self, request, queryset):
-        actualizados = queryset.update(estado='ACTIVO')
-        self.message_user(
-            request,
-            f"Se cambiaron {actualizados} dispositivo(s) a estado 'Activo'.",
-            messages.SUCCESS
-        )
+    @admin.action(description="Marcar seleccionados: ACTIVO")
+    def mark_active(self, request, queryset):
+        count = queryset.update(status='ACTIVE')
+        self.message_user(request, f"{count} dispositivo(s) activado(s).", messages.SUCCESS)
 
-    @admin.action(description="Marcar dispositivos seleccionados: INACTIVO")
-    def desactivar_dispositivos(self, request, queryset):
-        actualizados = queryset.update(estado='INACTIVO')
-        self.message_user(
-            request,
-            f"Se desactivaron {actualizados} dispositivo(s).",
-            messages.WARNING
-        )
+    @admin.action(description="Borrado lógico de elementos seleccionados")
+    def soft_delete_selected(self, request, queryset):
+        count = queryset.update(deleted_at=timezone.now())
+        self.message_user(request, f"{count} dispositivo(s) marcado(s) como eliminados lógicamente.", messages.WARNING)
 
-    # --------------------------------------------------------------------------
-    # SEGURIDAD Y SCOPING POR ORGANIZACIÓN
-    # --------------------------------------------------------------------------
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        org = get_user_org(request)
+        qs = Device.all_objects.all()
+        org = get_user_organization(request)
         if org:
-            return qs.filter(zona__organizacion=org)
+            return qs.filter(zone__organization=org)
         return qs
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        org = get_user_org(request)
-        if org:
-            if db_field.name == "zona":
-                kwargs["queryset"] = Zona.objects.filter(organizacion=org)
+        org = get_user_organization(request)
+        if org and db_field.name == "zone":
+            kwargs["queryset"] = Zone.objects.filter(organization=org)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-    def has_change_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.zona.organizacion_id != org.id:
-                return False
-        return super().has_change_permission(request, obj)
-
-    def has_delete_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.zona.organizacion_id != org.id:
-                return False
-        return super().has_delete_permission(request, obj)
-
-
-@admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(admin.ModelAdmin):
-    """
-    Administración de perfiles y asignación de organizaciones a usuarios.
-    Reservado prioritariamente al superadministrador.
-    """
-    list_display = ('user', 'rol', 'organizacion', 'telefono')
-    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'organizacion__nombre')
-    list_filter = ('rol', 'organizacion')
-    ordering = ('user__username',)
-    list_select_related = ('user', 'organizacion')
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        org = get_user_org(request)
-        if org:
-            return qs.filter(organizacion=org)
-        return qs
 
 
 # ==============================================================================
-# MODELADMINS - TABLAS OPERATIVAS
+# TABLAS OPERACIONALES (ADMIN)
 # ==============================================================================
 
-@admin.register(RegistroConsumo)
-class RegistroConsumoAdmin(admin.ModelAdmin):
-    """
-    Tabla Operativa 1: Registros de telemetría y lecturas de consumo eléctrico.
-    Configura columnas, búsqueda, filtros, ordenamiento, optimización FK y scoping.
-    """
-    list_display = (
-        'dispositivo',
-        'zona_dispositivo',
-        'organizacion_dispositivo',
-        'consumo_kwh',
-        'voltaje_promedio',
-        'fecha_hora',
-        'observacion'
-    )
-    search_fields = (
-        'dispositivo__nombre',
-        'dispositivo__codigo_inventario',
-        'dispositivo__zona__nombre',
-        'observacion'
-    )
-    list_filter = ('fecha_hora', 'dispositivo__zona__organizacion', 'dispositivo__categoria')
-    ordering = ('-fecha_hora',)
-    list_select_related = ('dispositivo', 'dispositivo__zona', 'dispositivo__zona__organizacion')
+@admin.register(ConsumptionRecord)
+class ConsumptionRecordAdmin(admin.ModelAdmin):
+    list_display = ('device', 'zone_name', 'organization_name', 'consumption_kwh', 'average_voltage', 'recorded_at', 'deleted_at')
+    search_fields = ('device__name', 'device__serial_number', 'notes')
+    list_filter = ('recorded_at', 'device__zone__organization', 'device__category')
+    ordering = ('-recorded_at',)
+    list_select_related = ('device', 'device__zone', 'device__zone__organization')
 
     @admin.display(description="Zona")
-    def zona_dispositivo(self, obj):
-        return obj.dispositivo.zona.nombre
+    def zone_name(self, obj):
+        return obj.device.zone.name
 
     @admin.display(description="Organización")
-    def organizacion_dispositivo(self, obj):
-        return obj.dispositivo.zona.organizacion.nombre
+    def organization_name(self, obj):
+        return obj.device.zone.organization.name
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        org = get_user_org(request)
+        qs = ConsumptionRecord.all_objects.all()
+        org = get_user_organization(request)
         if org:
-            return qs.filter(dispositivo__zona__organizacion=org)
+            return qs.filter(device__zone__organization=org)
         return qs
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        org = get_user_org(request)
-        if org:
-            if db_field.name == "dispositivo":
-                kwargs["queryset"] = Dispositivo.objects.filter(zona__organizacion=org)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    def has_change_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.dispositivo.zona.organizacion_id != org.id:
-                return False
-        return super().has_change_permission(request, obj)
-
-    def has_delete_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.dispositivo.zona.organizacion_id != org.id:
-                return False
-        return super().has_delete_permission(request, obj)
-
-
-@admin.register(AlertaConsumo)
-class AlertaConsumoAdmin(admin.ModelAdmin):
-    """
-    Tabla Operativa 2: Alertas e Incidencias operacionales.
-    Incluye acción personalizada para resolución en lote, optimización FK y scoping.
-    """
-    list_display = (
-        'dispositivo',
-        'zona_dispositivo',
-        'organizacion_dispositivo',
-        'nivel',
-        'mensaje_resumen',
-        'resuelta',
-        'fecha_hora',
-        'resuelta_en'
-    )
-    search_fields = ('dispositivo__nombre', 'mensaje', 'dispositivo__zona__nombre')
-    list_filter = ('resuelta', 'nivel', 'fecha_hora', 'dispositivo__zona__organizacion')
-    ordering = ('-fecha_hora',)
-    list_select_related = ('dispositivo', 'dispositivo__zona', 'dispositivo__zona__organizacion')
-    actions = ['marcar_como_resueltas']
-
-    @admin.display(description="Zona")
-    def zona_dispositivo(self, obj):
-        return obj.dispositivo.zona.nombre
-
-    @admin.display(description="Organización")
-    def organizacion_dispositivo(self, obj):
-        return obj.dispositivo.zona.organizacion.nombre
+@admin.register(EnergyAlert)
+class EnergyAlertAdmin(admin.ModelAdmin):
+    list_display = ('device', 'severity', 'message_short', 'is_resolved', 'triggered_at', 'resolved_at', 'deleted_at')
+    search_fields = ('device__name', 'message')
+    list_filter = ('is_resolved', 'severity', 'triggered_at', 'device__zone__organization')
+    ordering = ('-triggered_at',)
+    list_select_related = ('device', 'device__zone', 'device__zone__organization')
+    actions = ['resolve_alerts']
 
     @admin.display(description="Detalle Alerta")
-    def mensaje_resumen(self, obj):
-        return (obj.mensaje[:50] + '...') if len(obj.mensaje) > 50 else obj.mensaje
+    def message_short(self, obj):
+        return (obj.message[:50] + '...') if len(obj.message) > 50 else obj.message
 
-    # --------------------------------------------------------------------------
-    # ACCIÓN PERSONALIZADA (Admin Pro)
-    # --------------------------------------------------------------------------
     @admin.action(description="Marcar alertas seleccionadas como RESUELTAS")
-    def marcar_como_resueltas(self, request, queryset):
-        ahora = timezone.now()
-        actualizadas = queryset.filter(resuelta=False).update(resuelta=True, resuelta_en=ahora)
-        self.message_user(
-            request,
-            f"Se marcaron {actualizadas} alerta(s) como resueltas exitosamente.",
-            messages.SUCCESS
-        )
+    def resolve_alerts(self, request, queryset):
+        count = queryset.filter(is_resolved=False).update(is_resolved=True, resolved_at=timezone.now())
+        self.message_user(request, f"{count} alerta(s) resuelta(s) exitosamente.", messages.SUCCESS)
 
-    # --------------------------------------------------------------------------
-    # SEGURIDAD Y SCOPING POR ORGANIZACIÓN
-    # --------------------------------------------------------------------------
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        org = get_user_org(request)
+        qs = EnergyAlert.all_objects.all()
+        org = get_user_organization(request)
         if org:
-            return qs.filter(dispositivo__zona__organizacion=org)
+            return qs.filter(device__zone__organization=org)
         return qs
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        org = get_user_org(request)
+
+@admin.register(MaintenanceOrder)
+class MaintenanceOrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'device', 'scheduled_date', 'status', 'cost', 'deleted_at')
+    search_fields = ('title', 'device__name', 'technician_notes')
+    list_filter = ('status', 'scheduled_date', 'device__zone__organization')
+    ordering = ('-scheduled_date',)
+    list_select_related = ('device', 'device__zone', 'device__zone__organization')
+
+    def get_queryset(self, request):
+        qs = MaintenanceOrder.all_objects.all()
+        org = get_user_organization(request)
         if org:
-            if db_field.name == "dispositivo":
-                kwargs["queryset"] = Dispositivo.objects.filter(zona__organizacion=org)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+            return qs.filter(device__zone__organization=org)
+        return qs
 
-    def has_change_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.dispositivo.zona.organizacion_id != org.id:
-                return False
-        return super().has_change_permission(request, obj)
 
-    def has_delete_permission(self, request, obj=None):
-        if obj and not request.user.is_superuser:
-            org = get_user_org(request)
-            if org and obj.dispositivo.zona.organizacion_id != org.id:
-                return False
-        return super().has_delete_permission(request, obj)
+@admin.register(MonthlyZoneBudget)
+class MonthlyZoneBudgetAdmin(admin.ModelAdmin):
+    list_display = ('zone', 'year', 'month', 'budgeted_kwh', 'actual_kwh', 'is_closed', 'deleted_at')
+    search_fields = ('zone__name', 'zone__organization__name')
+    list_filter = ('year', 'month', 'is_closed', 'zone__organization')
+    ordering = ('-year', '-month')
+    list_select_related = ('zone', 'zone__organization')
+
+    def get_queryset(self, request):
+        qs = MonthlyZoneBudget.all_objects.all()
+        org = get_user_organization(request)
+        if org:
+            return qs.filter(zone__organization=org)
+        return qs
