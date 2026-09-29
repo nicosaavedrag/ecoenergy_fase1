@@ -17,11 +17,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Si alguien entra a la IP sola, lo redirige automáticamente a /zonas/
-    path('', RedirectView.as_view(url='/zonas/')),
-    # Carga todas las rutas de tu aplicación desde la raíz
+    path('accounts/', include('accounts.urls')),
+    # Redirige raíz a /dashboard/ o /zonas/
+    path('', RedirectView.as_view(url='/dashboard/')),
+    # Carga todas las rutas de la aplicación monitoreo
     path('', include('monitoreo.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
