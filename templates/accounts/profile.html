@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Perfil - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-person-vcard text-primary me-2"></i>Perfil de Usuario</h5>
+                <span class="badge bg-primary">{{ profile.get_role_display|default:'Sin rol' }}</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="display-4 text-secondary mb-2"><i class="bi bi-person-circle"></i></div>
+                    <h4 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                    <span class="text-muted">{{ user.email|default:'Sin email registrado' }}</span>
+                </div>
+
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Nombre de usuario:</span>
+                        <span class="fw-semibold"><code>{{ user.username }}</code></span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Organización asignada (Scoping):</span>
+                        <span class="fw-semibold">
+                            {% if profile.organization %}
+                                <i class="bi bi-building text-success"></i> {{ profile.organization.name }} ({{ profile.organization.tax_id }})
+                            {% else %}
+                                <i class="bi bi-globe text-primary"></i> Acceso Global (Superadmin)
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Teléfono de contacto:</span>
+                        <span>{{ profile.phone|default:'No registrado' }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Fecha de registro:</span>
+                        <span>{{ user.date_joined|date:"d/m/Y H:i" }}</span>
+                    </li>
+                </ul>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

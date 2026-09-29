@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - EcoEnergy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-cpu me-2 text-info"></i>{{ title }}</h5>
+                <a href="{% url 'device_list' %}" class="btn btn-sm btn-outline-secondary">Volver al inventario</a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small">{{ form.non_field_errors.0 }}</div>
+                    {% endif %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nombre del Dispositivo</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Número de Serie / Código Único</label>
+                            {{ form.serial_number }}
+                            {% if form.serial_number.errors %}<div class="text-danger small mt-1">{{ form.serial_number.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Zona Asignada</label>
+                            {{ form.zone }}
+                            {% if form.zone.errors %}<div class="text-danger small mt-1">{{ form.zone.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Categoría Técnica</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}<div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Potencia Nominal (kW)</label>
+                            {{ form.nominal_power_kw }}
+                            {% if form.nominal_power_kw.errors %}<div class="text-danger small mt-1">{{ form.nominal_power_kw.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Estado Operativo</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Fecha de Instalación</label>
+                            {{ form.installation_date }}
+                            {% if form.installation_date.errors %}<div class="text-danger small mt-1">{{ form.installation_date.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Proveedor Asociado (Opcional)</label>
+                        {{ form.supplier }}
+                    </div>
+
+                    <!-- CARGA DE IMAGEN O FICHA TÉCNICA -->
+                    <div class="card bg-light border-0 p-3 mb-4">
+                        <label class="form-label fw-semibold d-flex justify-content-between align-items-center mb-1">
+                            <span><i class="bi bi-camera me-1"></i> Fotografía o Ficha Técnica del Equipo</span>
+                            <span class="badge bg-secondary">Máx. 2 MB (JPG, PNG, WEBP)</span>
+                        </label>
+                        <p class="text-muted small mb-2">Se validará el tamaño, la extensión y el contenido real mediante Pillow.</p>
+                        
+                        {% if device and device.image %}
+                            <div class="mb-2 d-flex align-items-center gap-3">
+                                <img src="{{ device.image.url }}" alt="{{ device.name }}" class="rounded border shadow-sm" style="max-height: 80px;">
+                                <div class="small text-muted">Archivo actual: <a href="{{ device.image.url }}" target="_blank">{{ device.image.name }}</a></div>
+                            </div>
+                        {% endif %}
+
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                            <div class="text-danger small mt-1 fw-bold">{{ form.image.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'device_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-info text-white"><i class="bi bi-check-lg me-1"></i>Guardar Dispositivo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

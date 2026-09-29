@@ -1,32 +1,53 @@
-# EcoEnergy - Plataforma de Monitoreo y Gestión Energética
-
-Sistema web desarrollado con **Django** para la supervisión y control del consumo energético industrial, multiorganización y multi-zona. Incluye interfaces para consulta operativa y un **Django Admin** profesional con scoping estricto por organización, validaciones de negocio controladas, inlines y acciones en lote.
-
----
-
-## 🚀 Requisitos del Sistema
-- **Python:** 3.10 o superior (probado en Python 3.12)
-- **Django:** 4.2 LTS
-- **Entorno virtual:** `venv`
+# EcoEnergy - Plataforma de Monitoreo y Gestión Energética Industrial
+### Evaluación Formativa · Unidad II (Integración Django: Autenticación, Permisos, CRUD, Archivos y Despliegue)
+**Asignatura:** Programación Back End (TI3V41)  
+**Sede:** INACAP La Serena · **Docente:** Javier Ahumada  
 
 ---
 
-## 🛠️ Instalación y Puesta en Marcha (Entorno Limpio)
+## 📌 Descripción General
+**EcoEnergy** es una solución integral desarrollada en Django orientada a la supervisión, auditoría y control de consumo eléctrico para empresas industriales y comerciales multi-sede.
 
-Siga estos pasos para levantar el proyecto desde cero en el laboratorio o en cualquier equipo:
+El sistema incorpora:
+- **Estructura modular en 2 aplicaciones:** `accounts` (autenticación, roles y recuperación de clave) y `monitoreo` (lógica de negocio y telemetría).
+- **Modelo de datos con nomenclatura técnica en inglés:** 6 tablas maestras y 4 operacionales con borrado lógico (`deleted_at`).
+- **Autenticación robusta:** Inicio/cierre de sesión, recuperación de contraseña mediante **código numérico de 6 dígitos** (de un solo uso y expiración temporal) y validador de complejidad (mínimo 10 caracteres, mayúscula, minúscula, número y símbolo).
+- **4 CRUDs completos en interfaz web:** Zonas, Dispositivos, Mediciones de Consumo y Alertas.
+- **Manejo de archivos e imágenes:** Subida de fotografías/fichas técnicas de equipos con validación de extensión, límite de tamaño (máx. 2 MB) y contenido real verificado con **Pillow** (`Image.verify()`).
+- **Paginación dinámica en sesión:** Selector de 5, 15 y 30 registros por página persistido en `request.session`.
+- **Eliminación segura con SweetAlert2:** Diálogos modales interactivos con envío por `POST + CSRF` que ejecutan borrado lógico.
+- **Exportación a Excel (`.xlsx`):** Descarga de reportes reales generados dinámicamente con `openpyxl`.
+- **Carga masiva reproducible:** Generación de **más de 1.100 registros de negocio** mediante comando de gestión.
+- **Despliegue preparado para AWS Academy:** Scripts automatizados y guía detallada para EC2.
 
-### 1. Clonar o acceder al directorio del proyecto
+---
+
+## 🛠️ Requisitos Previos
+- Python 3.10 o superior (verificado en Python 3.12).
+- Git.
+- Entorno virtual `venv`.
+
+---
+
+## 🚀 Instalación y Puesta en Marcha Local
+
+### 1. Clonar el repositorio y acceder a la carpeta
 ```bash
+git clone <URL_REPOSITORIO>
 cd ecoenergy_fase1
 ```
 
 ### 2. Crear y activar el entorno virtual
-En Windows (PowerShell / CMD):
+En Windows:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\activate
 ```
-*(En Linux / macOS: `python3 -m venv .venv && source .venv/bin/activate`)*
+En Linux / macOS:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
 ### 3. Instalar dependencias
 ```bash
@@ -34,76 +55,64 @@ pip install -r requirements.txt
 ```
 
 ### 4. Configurar variables de entorno (`.env`)
-Copie el archivo de ejemplo `.env.example` creando su archivo `.env`:
 ```powershell
 Copy-Item .env.example .env
 ```
-*(O en CMD: `copy .env.example .env`)*
-
-El archivo `.env` ya viene preconfigurado para SQLite por defecto (máxima portabilidad).
+*(En Linux/macOS: `cp .env.example .env`)*
 
 ### 5. Aplicar migraciones
 ```bash
 python manage.py migrate
 ```
 
-### 6. Cargar datos de prueba reproducibles (Seed Command)
-Ejecute el comando de poblamiento para crear automáticamente las organizaciones, tablas maestras, transacciones operativas, grupos, permisos y usuarios de prueba:
+### 6. Cargar datos reproducibles (>= 1.000 registros)
 ```bash
 python manage.py poblar_datos --limpiar
 ```
 
-### 7. Iniciar el servidor de desarrollo
+### 7. Ejecutar suite de pruebas automatizadas
+```bash
+python manage.py test monitoreo
+```
+
+### 8. Iniciar el servidor local
 ```bash
 python manage.py runserver
 ```
-Abra en el navegador: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+Abra en su navegador: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 ---
 
 ## 👥 Cuentas de Prueba Documentadas
 
-El comando `poblar_datos` crea 3 usuarios con diferentes niveles de acceso y organizaciones asociadas:
-
-| Usuario | Contraseña | Rol / Contexto | Permisos en Django Admin |
+| Usuario | Contraseña | Rol en el Sistema | Alcance / Scoping de Datos |
 | :--- | :--- | :--- | :--- |
-| **`admin`** | `AdminPassword123!` | **Superusuario Global** | Acceso total sin restricciones a todas las organizaciones y tablas. |
-| **`operador_norte`** | `OperadorNorte123!` | **Operador EcoIndustrias Norte S.A.** | Solo visualiza y gestiona zonas, dispositivos, mediciones y alertas de **EcoIndustrias Norte S.A.**. No puede ver datos de EcoRetail Sur. |
-| **`operador_sur`** | `OperadorSur123!` | **Operador EcoRetail Sur SpA** | Solo visualiza y gestiona zonas, dispositivos, mediciones y alertas de **EcoRetail Sur SpA**. No puede ver datos de EcoIndustrias Norte. |
+| **`admin`** | `AdminPassword123!` | Superadministrador Global | Acceso total a todas las empresas, zonas y configuraciones. |
+| **`operador_norte`** | `OperadorNorte123!` | Operador / Editor | Solo gestiona datos de **EcoIndustrias Norte S.A.** (Crear, editar, eliminar lógicamente). |
+| **`lector_norte`** | `LectorNorte123!` | Lector / Consulta | Solo visualiza y exporta datos de **EcoIndustrias Norte S.A.** (Sin permisos de modificación). |
+| **`operador_sur`** | `OperadorSur123!` | Operador / Editor | Solo gestiona datos de **EcoRetail Sur SpA**. Aislado de la empresa Norte. |
 
 ---
 
-## 🧪 Pruebas de Demostración en Laboratorio (Evaluación Sumativa II)
+## 🌐 Módulos y Rutas Principales
 
-### 1. Demostración de Scoping y Seguridad por Organización
-1. Iniciar sesión como `operador_norte`:
-   - Ir a **Zonas** o **Dispositivos**: solo se listan los equipos pertenecientes a *EcoIndustrias Norte S.A.*.
-   - En el formulario de creación de Dispositivos, el selector de Zona únicamente muestra zonas de su propia empresa.
-2. Cerrar sesión e iniciar sesión como `operador_sur`:
-   - Ir a **Zonas** o **Dispositivos**: únicamente se visualizan los registros de *EcoRetail Sur SpA*.
-3. Iniciar sesión como `admin`:
-   - Se visualizan todos los registros y todas las organizaciones.
+### Autenticación y Cuentas
+- Iniciar Sesión: `/accounts/login/`
+- Cerrar Sesión: `/accounts/logout/`
+- Recuperar Contraseña (Código 6 dígitos): `/accounts/password-reset/`
+- Validar Código y Nueva Clave: `/accounts/password-reset/verify/`
+- Perfil de Usuario: `/accounts/profile/`
 
-### 2. Demostración de Admin Pro (Inlines, Acciones y Validaciones)
-- **Inline de Dispositivos:** Al editar cualquier **Zona**, en la parte inferior aparece la tabla inline editable con todos los dispositivos de dicha zona.
-- **Acciones Personalizadas en Lote:**
-  - En **Dispositivos**: seleccionar elementos y elegir en la barra superior *"Marcar dispositivos seleccionados: EN MANTENIMIENTO"* o *"Marcar dispositivos seleccionados: ACTIVO"*.
-  - En **Alertas de Consumo**: seleccionar alertas y ejecutar *"Marcar alertas seleccionadas como RESUELTAS"*.
-- **Validación Controlada con `clean()`:**
-  - Intentar editar una **Zona** con un `limite_kwh <= 0` (por ejemplo, `-50`): el sistema muestra un mensaje de error amigable en rojo sin romper la aplicación.
-  - Intentar crear un **Dispositivo** con estado `ACTIVO` y `potencia_nominal_kw = 0`: se rechaza indicando que un dispositivo activo requiere potencia > 0 kW.
-  - Intentar guardar un **Registro de Consumo** con consumo negativo o fecha futura: se valida controladamente.
-
-### 3. Ejecución de Tests Automatizados
-Para comprobar toda la suite de pruebas unitarias y de integración:
-```bash
-python manage.py test monitoreo
-```
+### Gestión Operativa y CRUDs
+- Dashboard Ejecutivo: `/dashboard/`
+- CRUD Zonas: `/zones/`
+- CRUD Dispositivos (con fotos): `/devices/`
+- CRUD Mediciones de Consumo: `/consumption/`
+- Descarga Reporte Excel: `/consumption/?export=xlsx`
+- CRUD Alertas e Incidencias: `/alerts/`
+- Administrador Django: `/admin/`
 
 ---
 
-## 🌐 Rutas del Sistema
-- **Django Admin:** `/admin/`
-- **Listado de Zonas (Fase 1):** `/zonas/`
-- **Detalle de Zona (Fase 1):** `/zonas/<id>/`
-- **Resumen Comparativo (Fase 2):** `/resumen-zonas/`
+## ☁️ Despliegue en AWS Academy
+Consulte el archivo [AWS_ACADEMY_DEPLOYMENT.md](file:///c:/Users/nicol/Documents/ecoenergy_fase1/AWS_ACADEMY_DEPLOYMENT.md) y ejecute `./deploy_aws.sh` en su instancia EC2 de AWS Academy para desplegar en menos de 2 minutos.
