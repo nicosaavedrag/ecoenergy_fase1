@@ -12,5 +12,5 @@ Thumbs.db
 .vscode/
 .idea/
 media/
-
-
+generar_pdf.py
+Manual_Estudio_Arquitectura_EcoEnergy.pdf
