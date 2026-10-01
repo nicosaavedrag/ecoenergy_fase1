@@ -7,6 +7,7 @@
 set -e
 
 echo "=== [1/6] Actualizando paquetes del sistema ==="
+PYTHON_CMD="python3"
 if command -v apt-get &> /dev/null; then
     # Entorno Ubuntu / Debian
     sudo apt-get update -y
@@ -14,20 +15,28 @@ if command -v apt-get &> /dev/null; then
 elif command -v dnf &> /dev/null; then
     # Entorno Amazon Linux 2023 / Fedora / RHEL
     sudo dnf update -y
-    sudo dnf install -y python3-pip git
+    sudo dnf install -y python3.11 python3.11-pip git || sudo dnf install -y python3-pip git
+    if command -v python3.11 &> /dev/null; then
+        PYTHON_CMD="python3.11"
+    fi
 elif command -v yum &> /dev/null; then
     # Entorno Amazon Linux 2 / CentOS
     sudo yum update -y
-    sudo yum install -y python3-pip git
+    sudo yum install -y python3.11 python3.11-pip git || sudo yum install -y python3-pip git
+    if command -v python3.11 &> /dev/null; then
+        PYTHON_CMD="python3.11"
+    fi
 else
     echo "Advertencia: No se detectó un gestor de paquetes soportado (apt/dnf/yum). Continuando..."
 fi
 
-echo "=== [2/6] Configurando entorno virtual ==="
-if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
+echo "=== [2/6] Configurando entorno virtual ($PYTHON_CMD) ==="
+if [ ! -d ".venv" ] || [ ! -f ".venv/bin/activate" ]; then
+    rm -rf .venv
+    $PYTHON_CMD -m venv .venv
 fi
 source .venv/bin/activate
+
 
 echo "=== [3/6] Instalando dependencias ==="
 pip install --upgrade pip
