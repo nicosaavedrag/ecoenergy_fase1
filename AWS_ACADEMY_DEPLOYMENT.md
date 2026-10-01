@@ -17,7 +17,7 @@ Esta guía detalla los pasos para desplegar la aplicación Django en una instanc
 1. En la consola de AWS, busque y seleccione el servicio **EC2**.
 2. Haga clic en **Launch Instance** (Lanzar instancia):
    - **Name:** `EcoEnergy-Server`
-   - **AMI:** `Ubuntu Server 24.04 LTS` o `Ubuntu Server 22.04 LTS` (64-bit x86).
+   - **AMI:** Seleccione **Amazon Linux 2023 AMI** (por defecto de AWS) o **Ubuntu Server 24.04/22.04 LTS** (el script detecta automáticamente el sistema).
    - **Instance type:** `t2.micro` (Apta para la capa gratuita / Learner Lab).
    - **Key pair (login):** Seleccione `vockey` (la llave por defecto de AWS Academy) o cree una nueva según su preferencia.
    - **Network settings (Security Group):**

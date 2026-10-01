@@ -7,8 +7,21 @@
 set -e
 
 echo "=== [1/6] Actualizando paquetes del sistema ==="
-sudo apt-get update -y
-sudo apt-get install -y python3-pip python3-venv git libpq-dev
+if command -v apt-get &> /dev/null; then
+    # Entorno Ubuntu / Debian
+    sudo apt-get update -y
+    sudo apt-get install -y python3-pip python3-venv git libpq-dev
+elif command -v dnf &> /dev/null; then
+    # Entorno Amazon Linux 2023 / Fedora / RHEL
+    sudo dnf update -y
+    sudo dnf install -y python3-pip git
+elif command -v yum &> /dev/null; then
+    # Entorno Amazon Linux 2 / CentOS
+    sudo yum update -y
+    sudo yum install -y python3-pip git
+else
+    echo "Advertencia: No se detectó un gestor de paquetes soportado (apt/dnf/yum). Continuando..."
+fi
 
 echo "=== [2/6] Configurando entorno virtual ==="
 if [ ! -d ".venv" ]; then
