@@ -17,10 +17,39 @@ class LoginForm(forms.Form):
 
 
 class RequestPasswordResetForm(forms.Form):
+    METHOD_CHOICES = [
+        ('whatsapp', '📱 Mensaje directo de WhatsApp al celular'),
+        ('email', '✉️ Correo Electrónico'),
+    ]
+
     username = forms.CharField(
         label="Nombre de Usuario",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su nombre de usuario'}),
-        help_text="Se generará un código de verificación de 6 dígitos para restablecer su clave."
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: admin, operador_norte'}),
+        help_text="Usuario registrado que requiere cambio de credenciales."
+    )
+    delivery_method = forms.ChoiceField(
+        label="Canal de Notificación",
+        choices=METHOD_CHOICES,
+        initial='whatsapp',
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
+    )
+    destination = forms.CharField(
+        label="Número de Teléfono (WhatsApp) o Correo",
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: +56912345678 (WhatsApp) o usuario@ecoenergy.cl'
+        }),
+        help_text="Opcional. Si lo deja vacío, se utilizará el dato guardado en su perfil de usuario."
+    )
+    apikey = forms.CharField(
+        label="API Key de CallMeBot (Opcional)",
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Dejar vacío si ya está configurado en el servidor'
+        }),
+        help_text="Clave API entregada por el bot de WhatsApp (CallMeBot) para la demostración."
     )
 
     def clean_username(self):
@@ -28,6 +57,7 @@ class RequestPasswordResetForm(forms.Form):
         if not User.objects.filter(username=username).exists():
             raise ValidationError("No existe ningún usuario registrado con ese nombre.")
         return username
+
 
 
 class VerifyResetCodeForm(forms.Form):

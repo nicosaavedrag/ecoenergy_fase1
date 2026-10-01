@@ -149,8 +149,19 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# Configuración de email para pruebas de recuperación de contraseña (en consola de desarrollo)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Configuración de email para recuperación de contraseña (compatible con hMailServer / SMTP o consola)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 25))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() in ('true', '1')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@ecoenergy.cl')
+
+# Configuración de WhatsApp Bot (CallMeBot API para demostración 2FA)
+CALLMEBOT_API_KEY = os.environ.get('CALLMEBOT_API_KEY', '')
+CALLMEBOT_PHONE = os.environ.get('CALLMEBOT_PHONE', '')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

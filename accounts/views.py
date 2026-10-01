@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import PasswordResetCode
 from .forms import LoginForm, RequestPasswordResetForm, VerifyResetCodeForm
 
@@ -36,22 +38,46 @@ def user_logout(request):
     return redirect('login')
 
 
+from .notifications import send_recovery_code
+
+
 def password_reset_request(request):
     """
-    Paso 1: Solicita nombre de usuario y genera un código numérico de 6 dígitos.
-    Para efectos de demostración en laboratorio se muestra el código en pantalla y en consola.
+    Paso 1: Solicita nombre de usuario y canal de notificación (WhatsApp o Correo).
+    Genera un código numérico de 6 dígitos (15 min de vigencia, un solo uso).
+    Despacha el mensaje vía WhatsApp o Correo y registra en terminal para demostración segura.
     """
     if request.method == 'POST':
         form = RequestPasswordResetForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
+            method = form.cleaned_data['delivery_method']
+            destination = form.cleaned_data.get('destination', '').strip()
+            apikey = form.cleaned_data.get('apikey', '').strip()
+
             user = User.objects.get(username=username)
             code_obj = PasswordResetCode.generate_code_for_user(user)
 
-            messages.info(
-                request,
-                f"Código generado para {user.username}: {code_obj.code} (Válido por 15 minutos)."
+            # Envío mediante el canal seleccionado (WhatsApp / Email con respaldo en consola)
+            success, detail = send_recovery_code(
+                user=user,
+                code=code_obj.code,
+                method=method,
+                destination=destination,
+                apikey=apikey
             )
+
+            if success:
+                messages.success(
+                    request,
+                    f"¡Código de seguridad de 6 dígitos generado con éxito! {detail}"
+                )
+            else:
+                messages.warning(
+                    request,
+                    f"Código generado (visible en la terminal/consola del servidor): {detail}"
+                )
+
             return redirect(f"/accounts/password-reset/verify/?username={username}")
     else:
         form = RequestPasswordResetForm()
