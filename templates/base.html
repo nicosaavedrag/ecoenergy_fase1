@@ -69,6 +69,11 @@
                             <i class="bi bi-exclamation-triangle"></i> Alertas
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info {% if 'api_demo' in request.resolver_match.url_name %}active fw-semibold{% endif %}" href="{% url 'api_demo_client' %}">
+                            <i class="bi bi-shield-lock"></i> Demo API REST (JWT)
+                        </a>
+                    </li>
                     {% if user.is_staff or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link text-warning" href="/admin/" target="_blank">

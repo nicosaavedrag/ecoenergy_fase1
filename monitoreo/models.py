@@ -276,7 +276,7 @@ class Device(SoftDeleteModel):
         help_text="Formatos: .jpg, .png, .webp. Máximo 2 MB."
     )
     installation_date = models.DateField(
-        default=timezone.now,
+        default=timezone.localdate,
         verbose_name="Fecha de Instalación"
     )
 

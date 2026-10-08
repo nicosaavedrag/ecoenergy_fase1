@@ -49,10 +49,12 @@ class Command(BaseCommand):
             User.objects.filter(username__in=['admin', 'operador_norte', 'lector_norte', 'operador_sur']).delete()
 
         # ----------------------------------------------------------------------
-        # 1. PERMISOS Y ROLES DE DJANGO
+        # 1. PERMISOS Y ROLES DE DJANGO (WEB Y API REST)
         # ----------------------------------------------------------------------
         group_operators, _ = Group.objects.get_or_create(name="Operadores de Monitoreo")
         group_viewers, _ = Group.objects.get_or_create(name="Lectores de Monitoreo")
+        group_admin_api, _ = Group.objects.get_or_create(name="AdministradorAPI")
+        group_oper_api, _ = Group.objects.get_or_create(name="OperadorAPI")
 
         all_models = [
             Organization, DeviceCategory, Supplier, EnergyTariff,
@@ -120,6 +122,7 @@ class Command(BaseCommand):
         u_admin.is_staff = True
         u_admin.is_superuser = True
         u_admin.save()
+        u_admin.groups.add(group_admin_api)
         UserProfile.objects.update_or_create(
             user=u_admin,
             defaults={'role': 'ADMIN', 'organization': None, 'phone': '+56 9 1111 2222'}
@@ -133,13 +136,26 @@ class Command(BaseCommand):
         u_op_norte.set_password('OperadorNorte123!')
         u_op_norte.is_staff = True
         u_op_norte.save()
-        u_op_norte.groups.add(group_operators)
+        u_op_norte.groups.add(group_operators, group_oper_api)
         UserProfile.objects.update_or_create(
             user=u_op_norte,
             defaults={'role': 'OPERATOR', 'organization': org_norte, 'phone': '+56 9 3333 4444'}
         )
 
-        # 3.3 Lector / Consulta (EcoIndustrias Norte)
+        # 3.3 Usuario específico de prueba API (OperadorAPI - Slide 13)
+        u_op_api, _ = User.objects.get_or_create(
+            username='operador_api',
+            defaults={'email': 'operador.api@ecoenergy.cl', 'first_name': 'Operador', 'last_name': 'REST', 'is_staff': False}
+        )
+        u_op_api.set_password('OperadorApi123!')
+        u_op_api.save()
+        u_op_api.groups.add(group_oper_api)
+        UserProfile.objects.update_or_create(
+            user=u_op_api,
+            defaults={'role': 'OPERATOR', 'organization': org_norte, 'phone': '+56 9 2222 3333'}
+        )
+
+        # 3.4 Lector / Consulta (EcoIndustrias Norte - Sin Grupo API para test 403)
         u_lec_norte, _ = User.objects.get_or_create(
             username='lector_norte',
             defaults={'email': 'lector.norte@ecoenergy.cl', 'first_name': 'Patricia', 'last_name': 'López', 'is_staff': True}
@@ -153,7 +169,7 @@ class Command(BaseCommand):
             defaults={'role': 'VIEWER', 'organization': org_norte, 'phone': '+56 9 5555 7777'}
         )
 
-        # 3.4 Operador Organización 2 (EcoRetail Sur)
+        # 3.5 Operador Organización 2 (EcoRetail Sur)
         u_op_sur, _ = User.objects.get_or_create(
             username='operador_sur',
             defaults={'email': 'operador.sur@ecoenergy.cl', 'first_name': 'Camila', 'last_name': 'Miranda', 'is_staff': True}
@@ -161,7 +177,7 @@ class Command(BaseCommand):
         u_op_sur.set_password('OperadorSur123!')
         u_op_sur.is_staff = True
         u_op_sur.save()
-        u_op_sur.groups.add(group_operators)
+        u_op_sur.groups.add(group_operators, group_oper_api)
         UserProfile.objects.update_or_create(
             user=u_op_sur,
             defaults={'role': 'OPERATOR', 'organization': org_sur, 'phone': '+56 9 8888 9999'}

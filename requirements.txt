@@ -7,3 +7,5 @@ python-dotenv>=1.0.0
 beautifulsoup4>=4.12.0
 sqlparse>=0.4.4
 tzdata
+djangorestframework>=3.14.0,<3.16.0
+djangorestframework-simplejwt

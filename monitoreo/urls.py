@@ -28,4 +28,7 @@ urlpatterns = [
     path('alerts/new/', views.alert_create, name='alert_create'),
     path('alerts/<int:pk>/resolve/', views.alert_resolve, name='alert_resolve'),
     path('alerts/<int:pk>/delete/', views.alert_delete, name='alert_delete'),
+
+    # Cliente Interactivo Demo API REST (Unidad 3 - JWT y CRUD)
+    path('api-demo/', views.api_demo_client, name='api_demo_client'),
 ]

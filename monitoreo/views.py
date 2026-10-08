@@ -448,3 +448,18 @@ def alert_delete(request, pk):
     alert.delete()
     messages.success(request, f"Alerta #{alert.id} eliminada lógicamente.")
     return redirect('alert_list')
+
+
+def api_demo_client(request):
+    """
+    Vista interactiva del cliente API REST:
+    Permite demostrar en vivo el Login mediante JWT (POST /api/token/),
+    la visualización del Bearer Token y el consumo del CRUD protegido (/api/devices/).
+    """
+    zones = Zone.objects.all().order_by('name')
+    categories = DeviceCategory.objects.all().order_by('name')
+    return render(request, 'monitoreo/api_demo.html', {
+        'zones': zones,
+        'categories': categories,
+    })
+

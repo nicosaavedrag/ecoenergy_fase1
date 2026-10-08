@@ -23,6 +23,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
+    # Rutas API REST (Unidad 3)
+    path('api/', include('monitoreo.api_urls')),
     # Redirige raíz a /dashboard/ o /zonas/
     path('', RedirectView.as_view(url='/dashboard/')),
     # Carga todas las rutas de la aplicación monitoreo
@@ -30,4 +32,4 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
